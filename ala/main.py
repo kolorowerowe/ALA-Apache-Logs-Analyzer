@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 import uvicorn
+from reader import file_reader
 
 app = FastAPI()
 
@@ -10,12 +11,12 @@ async def root():
 
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
-
 
 if __name__ == '__main__':
-    print_hi('ALA is starting... ')
+    print('ALA is starting... ')
+
+    file_reader.read_logs_file()
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 

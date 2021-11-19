@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 
 currentdir = os.path.dirname(__file__)
 parentdir = os.path.dirname(currentdir)
@@ -17,6 +18,8 @@ def read_logs_file(log_file_name='apache_logs1'):
 
     abs_file_path = os.path.join(script_dir, relative_file_path)
 
+    start = time.time()
+
     with open(abs_file_path, "r") as f:
         print('Opened logs file!')
         for line in f:
@@ -25,5 +28,9 @@ def read_logs_file(log_file_name='apache_logs1'):
 
     print('Processing parsed logs')
     ALparser.process()
+
+    end = time.time()
+
+    print(f"Took: {end-start}")
 
 

@@ -1,4 +1,5 @@
 import re
+import pandas as pd
 
 class ApacheLogParser:
     logLineRegex = '([(\d\.)]+) ([\w-]+) ([\w-]+) \[(.*?)\] "(.*?)" (\d+) ([\d-]+) "(.*?)" "(.*?)"\n?'
@@ -7,9 +8,13 @@ class ApacheLogParser:
     def parseLine(self, logLine):
         matched = re.fullmatch(self.logLineRegex, logLine)
         if matched:
-            self.__logs.append({'raw': logLine, 'host': matched[1], 'logname': matched[2], 'user': matched[3], 'time': matched[4], 'request': matched[5], 'status': matched[6], 'bytes_of_response': matched[7], 'referer': matched[8], 'user_agent': matched[9]})
+            if isinstance(self.__logs, pd.DataFrame):
+                self.__logs = self.__logs.append({'raw': logLine, 'host': matched[1], 'logname': matched[2], 'user': matched[3], 'time': matched[4], 'request': matched[5], 'status': matched[6], 'bytes_of_response': matched[7], 'referer': matched[8], 'user_agent': matched[9]},ignore_index=True)
+            else:
+                self.__logs.append({'raw': logLine, 'host': matched[1], 'logname': matched[2], 'user': matched[3], 'time': matched[4], 'request': matched[5], 'status': matched[6], 'bytes_of_response': matched[7], 'referer': matched[8], 'user_agent': matched[9]})
 
     def process(self):
+        self.__logs = pd.DataFrame(self.__logs)
         self.normalize()
         self.categorize()
         self.enrich()

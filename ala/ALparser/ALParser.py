@@ -84,6 +84,7 @@ class ApacheLogParser:
         - prec_sign_count - number of '%' signs in request: high number may indicate an attempt to hide reserved words by using character encodings
         - session_request_count - number of requests in current session
         - session_request_count_per_second - average number of requests in current session per second
+        - session_same_count - number of identical requests in current session
         where * means that data is taken directly from parsed logs.
         '''
         pass

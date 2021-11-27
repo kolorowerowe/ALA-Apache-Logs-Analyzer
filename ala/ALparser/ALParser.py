@@ -15,13 +15,11 @@ class ApacheLogParser:
             else:
                 self.addLogLineToList(matched, logLine)
 
-    def process(self):
+    def preprocess(self):
         self.__logs = pd.DataFrame(self.__logs)
         self.sessions = self.normalize()
         if not self.sessions:
             raise RuntimeError('Normalization impossible, logs may be empty.')
-        self.categorize()
-        self.enrich()
 
     def areLogsDF(self):
         return isinstance(self.__logs, pd.DataFrame)
@@ -56,13 +54,6 @@ class ApacheLogParser:
             logs_by_hosts[log_idx]['logs'] = sessions_dict
         return logs_by_hosts
 
-
-    def categorize(self):
-        pass
-
-    def enrich(self):
-        pass
-
     def differMoreThanHour(self, date1, date2):
         struct_date_1 = datetime.datetime.strptime(date1, "%d/%B/%Y:%H:%M:%S +0000")
         struct_date_2 = datetime.datetime.strptime(date2, "%d/%B/%Y:%H:%M:%S +0000")
@@ -74,6 +65,27 @@ class ApacheLogParser:
         return self.__logs[index]
 
     def getMLFormattedLogs(self):
+        # TODO:
+        ''' Return a df with columns:
+        - session_id - '[host]:[session number]'
+        - host*
+        - logname*
+        - user*
+        - http_method - extracted from request
+        - activity - extracted from request
+        - http_version - extracted from request
+        - status*
+        - bytes_of_response*
+        - referer*
+        - user_agent*
+        - suspicious_agent - boolean, informs whether user_agent is on the list of known suspicious agents
+        - reserved_words - boolean, informs whether any words from the list of reserved words were used in request
+        - err_status - boolean, informs whether response status indicates a possible attempt of unauthorized access
+        - prec_sign_count - number of '%' signs in request: high number may indicate an attempt to hide reserved words by using character encodings
+        - session_request_count - number of requests in current session
+        - session_request_count_per_second - average number of requests in current session per second
+        where * means that data is taken directly from parsed logs.
+        '''
         pass
 
     def getVisualizationFormattedLogs(self):
@@ -81,7 +93,7 @@ class ApacheLogParser:
             for log in session['logs'].keys():
                 if "session" in log:
                     req = []
-                    i =0 
+                    i = 0 
                     for r in session['logs'][log]['request']:
                         normRequest = r.lower().split(" ")[1]
                         normRequest = normRequest.split("?")[0]

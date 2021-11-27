@@ -4,7 +4,6 @@ import os
 import sys
 
 currentdir = os.path.dirname(__file__)
-print(currentdir)
 sys.path.insert(0, currentdir)
 
 from reader import file_reader

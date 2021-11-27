@@ -4,7 +4,6 @@ import time
 
 currentdir = os.path.dirname(__file__)
 parentdir = os.path.dirname(currentdir)
-print(parentdir)
 sys.path.insert(0, parentdir)
 
 from ALparser.ALParser import ApacheLogParser
@@ -27,7 +26,7 @@ def read_logs_file(parser, log_file_name='apache_logs1'):
         print('Finished parsing lines')
 
     print('Processing parsed logs')
-    ALparser.process()
+    ALparser.preprocess()
 
     end = time.time()
     print(f"Took: {end-start}")

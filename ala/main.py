@@ -9,6 +9,8 @@ sys.path.insert(0, currentdir)
 
 from reader import file_reader
 from report.EmailClient import EmailClient
+from ALparser.ALParser import ApacheLogParser
+from visualizer.graph_visualizer import GraphVisualizer
 
 app = FastAPI()
 
@@ -17,14 +19,16 @@ app = FastAPI()
 async def root():
     return {"message": "Hello World"}
 
-
-
-
 if __name__ == '__main__':
     print('ALA is starting... ')
 
-    file_reader.read_logs_file()
-    #file_reader.read_logs_file('short1')
+    ALparser = ApacheLogParser()
+    file_reader.read_logs_file(ALparser)
+    # file_reader.read_logs_file('short1')
+
+    #Graph
+    graphVisualizer = GraphVisualizer(ALparser.getVisualizationFormattedLogs())
+    graphVisualizer.generateBaseGraph()
 
     # Example of EmailClient usage:
     # emailClient = EmailClient()

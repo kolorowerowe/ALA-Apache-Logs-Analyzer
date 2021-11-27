@@ -10,8 +10,8 @@ sys.path.insert(0, parentdir)
 from ALparser.ALParser import ApacheLogParser
 
 
-def read_logs_file(log_file_name='apache_logs1'):
-    ALparser = ApacheLogParser()
+def read_logs_file(parser, log_file_name='apache_logs1'):
+    ALparser = parser
 
     script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
     relative_file_path = '../../data/' + log_file_name
@@ -30,7 +30,6 @@ def read_logs_file(log_file_name='apache_logs1'):
     ALparser.process()
 
     end = time.time()
-
     print(f"Took: {end-start}")
 
 

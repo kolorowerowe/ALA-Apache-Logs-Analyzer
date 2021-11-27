@@ -1,11 +1,12 @@
 import re
 import pandas as pd
 import datetime
+from config import Configuration
 
 class ApacheLogParser:
     NCSAExtendedCombinedLogFormatRegex = '([(\d\.)]+) "?([\w-]+)"? "?([\w-]+)"? \[(.*?)\] "(.*?)" (\d+) ([\d-]+) "(.*?)" "(.*?)"\n?'
     __logs = []
-
+    visFormLogs = []
     def parseLine(self, logLine):
         matched = re.fullmatch(self.NCSAExtendedCombinedLogFormatRegex, logLine)
         if matched:
@@ -16,8 +17,8 @@ class ApacheLogParser:
 
     def process(self):
         self.__logs = pd.DataFrame(self.__logs)
-        sessions = self.normalize()
-        if not sessions:
+        self.sessions = self.normalize()
+        if not self.sessions:
             raise RuntimeError('Normalization impossible, logs may be empty.')
         self.categorize()
         self.enrich()
@@ -76,7 +77,24 @@ class ApacheLogParser:
         pass
 
     def getVisualizationFormattedLogs(self):
-        pass
+        for log_idx, session in enumerate(self.sessions):
+            for log in session['logs'].keys():
+                if "session" in log:
+                    req = []
+                    i =0 
+                    for r in session['logs'][log]['request']:
+                        normRequest = r.lower().split(" ")[1]
+                        normRequest = normRequest.split("?")[0]
+                        url = normRequest.split(".")
+                        if normRequest[len(normRequest) - 1] == '/':
+                            normRequest = normRequest[:len(normRequest)-1]
+                        if len(normRequest) > 0 and (len(url) == 1 or url[len(url)-1].lower() not in Configuration.extensionsToRemove):
+                            req.append(normRequest)
+                            self.visFormLogs.append({'caseId': f'{log_idx}_{log}', 'Activity': normRequest, 'index': i})
+                            i= i + 1
+                    self.visFormLogs.append({'caseId': f'{log_idx}_{log}', 'Activity': 'End', 'index': i})
+
+        return self.visFormLogs
 
     @property
     def logs(self):  

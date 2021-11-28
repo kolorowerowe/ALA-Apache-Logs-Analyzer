@@ -25,10 +25,10 @@ def read_logs_file(parser, log_file_name='apache_logs1'):
             ALparser.parseLine(line)
         print('Finished parsing lines')
 
-    print('Processing parsed logs')
+    print('Preprocessing parsed logs')
     ALparser.preprocess()
 
     end = time.time()
-    print(f"Took: {end-start}")
+    print(f"Finished. Reading and processing took: {end-start}s")
 
 

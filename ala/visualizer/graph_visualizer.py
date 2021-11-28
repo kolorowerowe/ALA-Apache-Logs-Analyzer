@@ -69,7 +69,10 @@ class GraphVisualizer:
         for ev_start in ev_start_set:
             G.add_edge("start", ev_start)
 
-        G.draw(os.path.join(Configuration.resultDir, "logs_flow_graph.png"), prog='dot')
+        drawPath = os.path.join(Configuration.resultDir, "logs_flow_graph.png")
+        G.draw(drawPath, prog='dot')
         
         end = time.time()
-        print(f"Took: {end-start}")
+        print(f"Generated graph. Took: {end-start}s")
+
+        return drawPath

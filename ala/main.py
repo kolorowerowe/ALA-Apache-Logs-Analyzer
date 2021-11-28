@@ -21,21 +21,23 @@ async def root():
 if __name__ == '__main__':
     print('ALA is starting... ')
 
+    # Reading & preprocessing logs
     ALparser = ApacheLogParser()
-    file_reader.read_logs_file(ALparser)
-    # file_reader.read_logs_file('short1')
+    # file_reader.read_logs_file(ALparser)
+    file_reader.read_logs_file(ALparser, 'apache_logs1_1000')
 
     #Graph
     graphVisualizer = GraphVisualizer(ALparser.getVisualizationFormattedLogs())
-    graphVisualizer.generateBaseGraph()
+    relative_img_path = graphVisualizer.generateBaseGraph()
 
-    # Example of EmailClient usage:
-    # emailClient = EmailClient()
-    # script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
-    # relative_file_path = '../data/short1'
-    # abs_file_path = os.path.join(script_dir, relative_file_path)
-    # emailClient.send_message("Tytuł", "Hej, co tam", [abs_file_path])
+    # Sending email with graph
+    emailClient = EmailClient()
+    script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
+    abs_file_path = os.path.join(script_dir, relative_img_path)
+    emailClient.send_message("[ALA] Wizualizacja logów", "Wiadomość wygenerowana automatycznie.", [abs_file_path])
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # rest endpoint is not usable now
+    # uvicorn.run(app, host="0.0.0.0", port=8000)
 
+    print('My job for now is done!')
 

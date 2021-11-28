@@ -2,13 +2,20 @@ import re
 import pandas as pd
 import datetime
 from config import Configuration
+from collections import Counter
 
 class ApacheLogParser:
-    NCSAExtendedCombinedLogFormatRegex = '([(\d\.)]+) "?([\w-]+)"? "?([\w-]+)"? \[(.*?)\] "(.*?)" (\d+) ([\d-]+) "(.*?)" "(.*?)"\n?'
+    __NCSAExtendedCombinedLogFormatRegex = '([(\d\.)]+) "?([\w-]+)"? "?([\w-]+)"? \[(.*?)\] "(.*?)" (\d+) ([\d-]+) "(.*?)" "(.*?)"\n?'
+    # TODO: Create lists
+    __suspicious_agents = []
+    __reserved_words = []
+    __err_statuses = []
+
     __logs = []
     visFormLogs = []
+
     def parseLine(self, logLine):
-        matched = re.fullmatch(self.NCSAExtendedCombinedLogFormatRegex, logLine)
+        matched = re.fullmatch(self.__NCSAExtendedCombinedLogFormatRegex, logLine)
         if matched:
             if self.areLogsDF():
                 self.addLogLineToDF(matched, logLine)
@@ -25,10 +32,12 @@ class ApacheLogParser:
         return isinstance(self.__logs, pd.DataFrame)
 
     def addLogLineToDF(self, matched, line):
-        self.__logs = self.__logs.append({'raw': line, 'host': matched[1], 'logname': matched[2], 'user': matched[3], 'time': matched[4], 'request': matched[5], 'status': matched[6], 'bytes_of_response': matched[7], 'referer': matched[8], 'user_agent': matched[9]},ignore_index=True)
+        response_bytes = matched[7] if matched[7] != '-' else 0
+        self.__logs = self.__logs.append({'raw': line, 'host': matched[1], 'logname': matched[2], 'user': matched[3], 'time': matched[4], 'request': matched[5], 'status': matched[6], 'bytes_of_response': response_bytes, 'referer': matched[8], 'user_agent': matched[9]},ignore_index=True)
     
     def addLogLineToList(self, matched, line):
-        self.__logs.append({'raw': line, 'host': matched[1], 'logname': matched[2], 'user': matched[3], 'time': matched[4], 'request': matched[5], 'status': matched[6], 'bytes_of_response': matched[7], 'referer': matched[8], 'user_agent': matched[9]})
+        response_bytes = matched[7] if matched[7] != '-' else 0
+        self.__logs.append({'raw': line, 'host': matched[1], 'logname': matched[2], 'user': matched[3], 'time': matched[4], 'request': matched[5], 'status': matched[6], 'bytes_of_response': response_bytes, 'referer': matched[8], 'user_agent': matched[9]})
     
     def normalize(self):
         if not self.areLogsDF:
@@ -65,7 +74,7 @@ class ApacheLogParser:
         return self.__logs[index]
 
     def getMLFormattedLogs(self):
-        # TODO:
+        # TODO: encode string data and get information from activity
         ''' Return a df with columns:
         - session_id - '[host]:[session number]'
         - host*
@@ -87,7 +96,68 @@ class ApacheLogParser:
         - session_same_count - number of identical requests in current session
         where * means that data is taken directly from parsed logs.
         '''
-        pass
+        MLdf = pd.DataFrame()
+
+        for host_sessions in self.sessions:
+            for session_id, logs in host_sessions['logs'].items():
+                session_df = pd.DataFrame()
+                min_session_time = datetime.datetime.strptime(logs.iloc[0]['time'], "%d/%B/%Y:%H:%M:%S +0000")
+                max_session_time = min_session_time
+                current_session_dict = {'id': None, 'request_count': 0, 'request_count_per_sec': 0, 'same_count': 0}
+                current_session_dict['id'] = f"{host_sessions['host']}:{session_id[7:]}"
+                for index, log in logs.iterrows():
+                    entry_time = datetime.datetime.strptime(log['time'], "%d/%B/%Y:%H:%M:%S +0000")
+                    if entry_time < min_session_time:
+                        min_session_time = entry_time
+                    if entry_time > max_session_time:
+                        max_session_time = entry_time
+
+                    current_entry_dict = dict()
+
+                    current_entry_dict['session_id'] = current_session_dict['id']
+                    current_entry_dict['host'] = log['host']
+                    current_entry_dict['logname'] = log['logname']
+                    current_entry_dict['user'] = log['user']
+                    
+                    request = log['request'].split(' ')
+                    current_entry_dict['http_method'] = request[0]
+                    current_entry_dict['activity'] = request[1]
+                    current_entry_dict['http_version'] = request[2]
+
+                    current_entry_dict['status'] = int(log['status'])
+                    current_entry_dict['bytes_of_response'] = int(log['bytes_of_response'])
+                    current_entry_dict['referer'] = log['referer']
+                    current_entry_dict['user_agent'] = log['user_agent']
+
+                    current_entry_dict['suspicious_agent'] = log['user_agent'] in self.__suspicious_agents
+                    current_entry_dict['reserved_words'] = False
+                    for word in self.__reserved_words: 
+                        if current_entry_dict['activity'].find(word):
+                            current_entry_dict['reserved_words'] = True
+                            break
+                    current_entry_dict['err_status'] = current_entry_dict['status'] in self.__err_statuses
+                    current_entry_dict['prec_sign_count'] = current_entry_dict['activity'].count('%')
+
+                    current_entry_dict['session_request_count'] = current_session_dict['request_count']
+                    current_entry_dict['session_request_count_per_second'] = current_session_dict['request_count_per_sec']
+                    current_entry_dict['session_same_count'] = current_session_dict['same_count']
+
+                    session_df = session_df.append(current_entry_dict, ignore_index=True)
+
+                session_time = (max_session_time-min_session_time).total_seconds()
+                request_count_column = [session_df.shape[0]] * session_df.shape[0]
+                request_count_column_per_second = [count/session_time if session_time else 0.0 for count in request_count_column]
+                session_df.update(pd.DataFrame({'session_request_count': request_count_column}))
+                session_df.update(pd.DataFrame({'session_request_count_per_second': request_count_column_per_second}))
+
+                activities_counts = session_df['activity'].value_counts()
+                activities_counts_column = [activities_counts[row['activity']] for index, row in session_df.iterrows()]
+                session_df.update(pd.DataFrame({'session_same_count': activities_counts_column}))
+
+                MLdf = MLdf.append(session_df)
+
+        return MLdf
+
 
     def getVisualizationFormattedLogs(self):
         for log_idx, session in enumerate(self.sessions):

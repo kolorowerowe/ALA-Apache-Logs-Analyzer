@@ -1,3 +1,4 @@
+import os
 import re
 import pandas as pd
 import datetime
@@ -9,10 +10,17 @@ class ApacheLogParser:
     # TODO: Create lists
     __suspicious_agents = []
     __reserved_words = []
-    __err_statuses = []
+    #__err_statuses = []
 
     __logs = []
     visFormLogs = []
+
+    def __init__(self):
+        script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
+        relative_file_path = '../../data/bad-user-agents.list'
+        abs_file_path = os.path.join(script_dir, relative_file_path)
+        with open(abs_file_path, 'r') as f:
+            self.__suspicious_agents = [line[:-1] for line in f]
 
     def parseLine(self, logLine):
         matched = re.fullmatch(self.__NCSAExtendedCombinedLogFormatRegex, logLine)
@@ -129,13 +137,18 @@ class ApacheLogParser:
                     current_entry_dict['referer'] = log['referer']
                     current_entry_dict['user_agent'] = log['user_agent']
 
-                    current_entry_dict['suspicious_agent'] = log['user_agent'] in self.__suspicious_agents
+                    current_entry_dict['suspicious_agent'] = False
+                    for agent in self.__suspicious_agents:
+                        if log['user_agent'].find(agent) != -1:
+                            current_entry_dict['suspicious_agent'] = True
+                            break
                     current_entry_dict['reserved_words'] = False
                     for word in self.__reserved_words: 
-                        if current_entry_dict['activity'].find(word):
+                        if current_entry_dict['activity'].find(word) != -1:
                             current_entry_dict['reserved_words'] = True
                             break
-                    current_entry_dict['err_status'] = current_entry_dict['status'] in self.__err_statuses
+                    #current_entry_dict['err_status'] = current_entry_dict['status'] in self.__err_statuses
+                    current_entry_dict['err_status'] = current_entry_dict['status'] >= 400 and current_entry_dict['status'] < 500
                     current_entry_dict['prec_sign_count'] = current_entry_dict['activity'].count('%')
 
                     current_entry_dict['session_request_count'] = current_session_dict['request_count']

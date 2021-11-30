@@ -7,9 +7,10 @@ from collections import Counter
 
 class ApacheLogParser:
     __NCSAExtendedCombinedLogFormatRegex = '([(\d\.)]+) "?([\w-]+)"? "?([\w-]+)"? \[(.*?)\] "(.*?)" (\d+) ([\d-]+) "(.*?)" "(.*?)"\n?'
-    # TODO: Create lists
+    # TODO: Refine lists
     __suspicious_agents = []
-    __reserved_words = []
+    __suspicious_referers = []
+    __reserved_words = ['union','/etc','/passwd','%27',' or ','%20or%20','+or+',' and ','%20and%20','+and+','localhost',';']
     #__err_statuses = []
 
     __logs = []
@@ -17,10 +18,16 @@ class ApacheLogParser:
 
     def __init__(self):
         script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
+
         relative_file_path = '../../data/bad-user-agents.list'
         abs_file_path = os.path.join(script_dir, relative_file_path)
         with open(abs_file_path, 'r') as f:
             self.__suspicious_agents = [line[:-1] for line in f]
+        
+        relative_file_path = '../../data/bad-referer.list'
+        abs_file_path = os.path.join(script_dir, relative_file_path)
+        with open(abs_file_path, 'r') as f:
+            self.__suspicious_referers = [line[:-1] for line in f]
 
     def parseLine(self, logLine):
         matched = re.fullmatch(self.__NCSAExtendedCombinedLogFormatRegex, logLine)
@@ -82,7 +89,7 @@ class ApacheLogParser:
         return self.__logs[index]
 
     def getMLFormattedLogs(self):
-        # TODO: encode string data and get information from activity
+        # TODO: encode string data
         ''' Return a df with columns:
         - session_id - '[host]:[session number]'
         - host*
@@ -90,11 +97,13 @@ class ApacheLogParser:
         - user*
         - http_method - extracted from request
         - activity - extracted from request
+        - activity_file_ext - extension of accessed file if any, else '-'
         - http_version - extracted from request
         - status*
         - bytes_of_response*
         - referer*
         - user_agent*
+        - suspicious_referer - boolean, informs whether referer is on the list of known suspicious referers
         - suspicious_agent - boolean, informs whether user_agent is on the list of known suspicious agents
         - reserved_words - boolean, informs whether any words from the list of reserved words were used in request
         - err_status - boolean, informs whether response status indicates a possible attempt of unauthorized access
@@ -111,8 +120,7 @@ class ApacheLogParser:
                 session_df = pd.DataFrame()
                 min_session_time = datetime.datetime.strptime(logs.iloc[0]['time'], "%d/%B/%Y:%H:%M:%S +0000")
                 max_session_time = min_session_time
-                current_session_dict = {'id': None, 'request_count': 0, 'request_count_per_sec': 0, 'same_count': 0}
-                current_session_dict['id'] = f"{host_sessions['host']}:{session_id[7:]}"
+                current_session_id = f"{host_sessions['host']}:{session_id[7:]}"
                 for index, log in logs.iterrows():
                     entry_time = datetime.datetime.strptime(log['time'], "%d/%B/%Y:%H:%M:%S +0000")
                     if entry_time < min_session_time:
@@ -122,7 +130,7 @@ class ApacheLogParser:
 
                     current_entry_dict = dict()
 
-                    current_entry_dict['session_id'] = current_session_dict['id']
+                    current_entry_dict['session_id'] = current_session_id
                     current_entry_dict['host'] = log['host']
                     current_entry_dict['logname'] = log['logname']
                     current_entry_dict['user'] = log['user']
@@ -130,6 +138,24 @@ class ApacheLogParser:
                     request = log['request'].split(' ')
                     current_entry_dict['http_method'] = request[0]
                     current_entry_dict['activity'] = request[1]
+                    if request[1].find('.html?') != -1:
+                        current_entry_dict['activity_file_ext'] = 'html'
+                    else:
+                        last_dot = request[1].rfind('.')
+                        last_slash = request[1].rfind('/')
+                        extension_correct = True
+                        if last_dot == -1 or last_slash > last_dot:
+                            extension_correct = False
+                        current_entry_dict['activity_file_ext'] = request[1][last_dot+1:] if extension_correct else '-'
+                        ext_qmark = current_entry_dict['activity_file_ext'].rfind('?')
+                        ext_prec = current_entry_dict['activity_file_ext'].rfind('%')
+                        idc = []
+                        if ext_qmark != -1:
+                            idc.append(ext_qmark)
+                        if ext_prec != -1:
+                            idc.append(ext_prec)
+                        if idc:
+                            current_entry_dict['activity_file_ext'] = current_entry_dict['activity_file_ext'][:min(idc)]
                     current_entry_dict['http_version'] = request[2]
 
                     current_entry_dict['status'] = int(log['status'])
@@ -137,23 +163,32 @@ class ApacheLogParser:
                     current_entry_dict['referer'] = log['referer']
                     current_entry_dict['user_agent'] = log['user_agent']
 
+                    # classify potential dangerous referers
+                    current_entry_dict['suspicious_referer'] = False
+                    for referer in self.__suspicious_referers:
+                        if log['referer'].lower().find(referer.lower()) != -1:
+                            current_entry_dict['suspicious_referer'] = True
+                            break
+                    # classify potential malicious bots
                     current_entry_dict['suspicious_agent'] = False
                     for agent in self.__suspicious_agents:
-                        if log['user_agent'].find(agent) != -1:
+                        if log['user_agent'].lower().find(agent.lower()) != -1:
                             current_entry_dict['suspicious_agent'] = True
                             break
+                    # classify potential injection attempts
                     current_entry_dict['reserved_words'] = False
                     for word in self.__reserved_words: 
-                        if current_entry_dict['activity'].find(word) != -1:
+                        if current_entry_dict['activity'].lower().find(word.lower()) != -1:
                             current_entry_dict['reserved_words'] = True
                             break
                     #current_entry_dict['err_status'] = current_entry_dict['status'] in self.__err_statuses
                     current_entry_dict['err_status'] = current_entry_dict['status'] >= 400 and current_entry_dict['status'] < 500
+                    # detect potential disguising of reserved words
                     current_entry_dict['prec_sign_count'] = current_entry_dict['activity'].count('%')
 
-                    current_entry_dict['session_request_count'] = current_session_dict['request_count']
-                    current_entry_dict['session_request_count_per_second'] = current_session_dict['request_count_per_sec']
-                    current_entry_dict['session_same_count'] = current_session_dict['same_count']
+                    current_entry_dict['session_request_count'] = 0
+                    current_entry_dict['session_request_count_per_second'] = 0
+                    current_entry_dict['session_same_count'] = 0
 
                     session_df = session_df.append(current_entry_dict, ignore_index=True)
 

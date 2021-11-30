@@ -24,11 +24,11 @@ if __name__ == '__main__':
 
     # Reading & preprocessing logs
     ALparser = ApacheLogParser()
-    # file_reader.read_logs_file(ALparser)
     file_reader.read_logs_file(ALparser, 'apache_logs1_1000')
+
     print('ML Formatter starting')
     start = time.time()
-    ALparser.getMLFormattedLogs().to_csv("ml_logs.csv")
+    ALparser.getMLFormattedLogs().to_csv("result/ml_logs.csv")
     end = time.time()
     print('ML Formatter finished')
     print(f"Finished. Ml formatting took: {end-start}s")

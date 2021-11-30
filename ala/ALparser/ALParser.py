@@ -16,17 +16,15 @@ class ApacheLogParser:
     __logs = []
     visFormLogs = []
 
-    def __init__(self):
+    def __init__(self, sus_agents = '../../data/bad-user-agents.list', sus_referers = '../../data/bad-referer.list'):
         script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
 
-        relative_file_path = '../../data/bad-user-agents.list'
-        abs_file_path = os.path.join(script_dir, relative_file_path)
-        with open(abs_file_path, 'r') as f:
+        abs_agents_file_path = os.path.join(script_dir, sus_agents)
+        with open(abs_agents_file_path, 'r') as f:
             self.__suspicious_agents = [line[:-1] for line in f]
         
-        relative_file_path = '../../data/bad-referer.list'
-        abs_file_path = os.path.join(script_dir, relative_file_path)
-        with open(abs_file_path, 'r') as f:
+        abs_referes_file_path = os.path.join(script_dir, sus_referers)
+        with open(abs_referes_file_path, 'r') as f:
             self.__suspicious_referers = [line[:-1] for line in f]
 
     def parseLine(self, logLine):

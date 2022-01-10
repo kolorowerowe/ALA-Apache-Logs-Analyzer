@@ -1,8 +1,13 @@
 import pandas as pd
+import os
+import numpy as np
 from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
 from sklearn.model_selection import train_test_split
 from keras.models import Sequential
-from keras.layers import Dense
+from keras.layers import Dense, Dropout
+
+from reader import file_reader
+from ALparser.ALParser import ApacheLogParser
 
 class Trainer:
     VALID_COLUMNS_LIST = ['session_id', 'host', 'logname', 'user', 'http_method', 'activity', 'activity_file_ext', 'http_version', 'status', 'bytes_of_response',
@@ -12,25 +17,32 @@ class Trainer:
                             'session_request_count_per_second', 'session_same_count']
     CATEGORICAL_COLUMNS_LIST = ['session_id', 'host', 'logname', 'user', 'http_method', 'activity', 'activity_file_ext', 'http_version', 'referer', 'user_agent']
 
-    def __init__(self, dataframes):
-        validDFs = []
-        for df in dataframes:
-            if self.validate(df):
-                validDFs.append(df)
-        sourceData = pd.concat(validDFs, ignore_index=True)
-        self.numeric = sourceData[self.NUMERIC_COLUMNS_LIST]
-        self.categorical = sourceData[self.CATEGORICAL_COLUMNS_LIST]
-        # TODO:
+    def __init__(self, log_file_name, labels_file_name):
+        TrainerParser = ApacheLogParser()
+        file_reader.read_logs_file(TrainerParser, log_file_name)
+        df = TrainerParser.getMLFormattedLogs()
+        if not self.validate(df):
+            raise RuntimeError("Invalid data passed to trainer.")
+        self.numeric = df[self.NUMERIC_COLUMNS_LIST]
+        self.categorical = df[self.CATEGORICAL_COLUMNS_LIST]
+        
+        script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
+        relative_file_path = '../../data/' + labels_file_name
+        abs_file_path = os.path.join(script_dir, relative_file_path)
         self.labels = []
+        with open(abs_file_path, "r") as f:
+            for line in f:
+                self.labels.append(line[:-1])
+        self.labels = pd.Series(self.labels, name="labels")
 
         columnsToDrop = []
         for cat in self.CATEGORICAL_COLUMNS_LIST:
             u = self.categorical[cat].unique()
             # debug
-            print(f'{cat}:\n{u}\n')
+            # print(f'{cat}:\n{u}\n')
             if len(u) in [0,1]:
                 columnsToDrop.append(cat)
-        self.categorical = self.categorical.drop(columns=[columnsToDrop])
+        self.categorical = self.categorical.drop(columns=columnsToDrop)
 
 
     def validate(self, dataframe):
@@ -50,16 +62,19 @@ class Trainer:
         encLabels = self.encodeLabels()
         encCat = self.encodeCategorical()
 
-        inputs = encCat.update(self.numeric)
+        inputs = np.append(encCat, self.numeric, axis=1)
 
         X_train, X_test, y_train, y_test = train_test_split(inputs, encLabels, test_size=0.3, random_state=53)
 
         model = Sequential()
-        model.add(Dense(64, input_dim=X_train.shape[1], activation='elu', kernel_initializer='he_normal'))
-        model.add(Dense(32, input_dim=X_train.shape[1], activation='elu'))
+        model.add(Dense(128, input_dim=X_train.shape[1], activation='elu', kernel_initializer='he_normal'))
+        model.add(Dense(64, input_dim=X_train.shape[1], activation='elu'))
+
         model.add(Dense(1, activation='sigmoid'))
 
         model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
         model.fit(X_train, y_train, epochs=100, batch_size=16, verbose=2)
         _, accuracy = model.evaluate(X_test, y_test, verbose=0)
         print('Accuracy: %.2f' % (accuracy*100))
+        if(accuracy > 77.64):
+            model.save(os.path.join(os.path.dirname(__file__), '../../models/model_01'))

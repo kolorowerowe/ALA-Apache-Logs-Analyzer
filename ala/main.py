@@ -35,8 +35,6 @@ if __name__ == '__main__':
     print('ML Formatter finished')
     print(f"Finished. Ml formatting took: {end-start}s")
 
-    t = Trainer([mldf])
-
     #Graph
     graphVisualizer = GraphVisualizer(ALparser.getVisualizationFormattedLogs())
     relative_img_path = graphVisualizer.generateBaseGraph()

@@ -7,6 +7,7 @@ from collections import Counter
 
 class ApacheLogParser:
     __NCSAExtendedCombinedLogFormatRegex = '([(\d\.)]+) "?([\w-]+)"? "?([\w-]+)"? \[(.*?)\] "(.*?)" (\d+) ([\d-]+) "(.*?)" "(.*?)"\n?'
+    __DatetimeFormat = "%d/%b/%Y:%H:%M:%S %z"
     # TODO: Refine lists
     __suspicious_agents = []
     __suspicious_referers = []
@@ -77,8 +78,8 @@ class ApacheLogParser:
         return logs_by_hosts
 
     def differMoreThanHour(self, date1, date2):
-        struct_date_1 = datetime.datetime.strptime(date1, "%d/%B/%Y:%H:%M:%S +0000")
-        struct_date_2 = datetime.datetime.strptime(date2, "%d/%B/%Y:%H:%M:%S +0000")
+        struct_date_1 = datetime.datetime.strptime(date1, self.__DatetimeFormat)
+        struct_date_2 = datetime.datetime.strptime(date2, self.__DatetimeFormat)
         return struct_date_1 + datetime.timedelta(hours=1) < struct_date_2
 
     def getParsedLine(self, index):
@@ -116,11 +117,11 @@ class ApacheLogParser:
         for host_sessions in self.sessions:
             for session_id, logs in host_sessions['logs'].items():
                 session_df = pd.DataFrame()
-                min_session_time = datetime.datetime.strptime(logs.iloc[0]['time'], "%d/%B/%Y:%H:%M:%S +0000")
+                min_session_time = datetime.datetime.strptime(logs.iloc[0]['time'], self.__DatetimeFormat)
                 max_session_time = min_session_time
                 current_session_id = f"{host_sessions['host']}:{session_id[7:]}"
                 for index, log in logs.iterrows():
-                    entry_time = datetime.datetime.strptime(log['time'], "%d/%B/%Y:%H:%M:%S +0000")
+                    entry_time = datetime.datetime.strptime(log['time'], self.__DatetimeFormat)
                     if entry_time < min_session_time:
                         min_session_time = entry_time
                     if entry_time > max_session_time:
@@ -154,7 +155,7 @@ class ApacheLogParser:
                             idc.append(ext_prec)
                         if idc:
                             current_entry_dict['activity_file_ext'] = current_entry_dict['activity_file_ext'][:min(idc)]
-                    current_entry_dict['http_version'] = request[2]
+                    current_entry_dict['http_version'] = request[2] if len(request) > 2 else '-'
 
                     current_entry_dict['status'] = int(log['status'])
                     current_entry_dict['bytes_of_response'] = int(log['bytes_of_response'])

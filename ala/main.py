@@ -10,7 +10,7 @@ sys.path.insert(0, currentdir)
 from reader import file_reader
 from report.EmailClient import EmailClient
 from ALparser.ALParser import ApacheLogParser
-from MLs.Trainer import Trainer
+from MLs.Checker import Checker
 from visualizer.graph_visualizer import GraphVisualizer
 
 app = FastAPI()
@@ -34,6 +34,14 @@ if __name__ == '__main__':
     end = time.time()
     print('ML Formatter finished')
     print(f"Finished. Ml formatting took: {end-start}s")
+
+    print('ML prediction starting')
+    start = time.time()
+    logChecker = Checker(mldf, 'model_01')
+    logChecker.predict()
+    end = time.time()
+    print('ML prediction finished')
+    print(f"Finished. Ml prediction took: {end-start}s")
 
     #Graph
     graphVisualizer = GraphVisualizer(ALparser.getVisualizationFormattedLogs())

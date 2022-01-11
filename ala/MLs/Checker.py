@@ -22,7 +22,6 @@ class Checker(MLmodule):
 
         for y in range(len(ynew_classes)):
             if ynew_classes[y] == 'attack':
-            # send feedback to report and visualizer modules
                 # restore original log entry
                 decoded = self.decodeCategorical(inputs[y,:numCat].reshape(1,-1)).flatten().tolist()
                 request = decoded[1:4]
@@ -32,6 +31,10 @@ class Checker(MLmodule):
                 request.append("\"" + decoded[-2] + "\"")
                 request.append("\"" + decoded[-1] + "\"")
                 request = " ".join(request)
-                sus_requests[decoded[0]] = request
+
+                if not decoded[0] in sus_requests:
+                    sus_requests[decoded[0]] = [request]
+                else:
+                    sus_requests[decoded[0]].append(request)
         
         return sus_requests

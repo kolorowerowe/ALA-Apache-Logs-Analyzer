@@ -43,14 +43,12 @@ if __name__ == '__main__':
     print('ML prediction finished')
     print(f"Finished. Ml prediction took: {end-start}s")
 
-    email_message = list(sus_requests.values())
+    email_message = [item for sublist in list(sus_requests.values()) for item in sublist]
     if not email_message:
         email_message = "Wiadomość wygenerowana automatycznie.\nNie wykryto podejrzanych zachowań."
     else:
         email_message.insert(0, "Wiadomość wygenerowana automatycznie.\n\nWykryto podejrzane zahcowania:")
         email_message = "\n".join(email_message)
-
-    print(email_message)
 
     #Graph
     graphVisualizer = GraphVisualizer(ALparser.getVisualizationFormattedLogs())

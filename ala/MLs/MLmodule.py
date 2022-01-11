@@ -16,14 +16,17 @@ class MLmodule:
         self.labels = []
         self.le = LabelEncoder()
         self.le.fit(['normal', 'attack'])
+        self.oe = OrdinalEncoder()
+        self.oe.fit(self.categorical)
 
     def validate(self, dataframe):
         return list(dataframe.columns) == self.VALID_COLUMNS_LIST
 
     def encodeCategorical(self):
-        oe = OrdinalEncoder()
-        oe.fit(self.categorical)
-        return oe.transform(self.categorical)
+        return self.oe.transform(self.categorical)
+
+    def decodeCategorical(self, data):
+        return self.oe.inverse_transform(data)
 
     def encodeLabels(self):
         return self.le.transform(self.labels)

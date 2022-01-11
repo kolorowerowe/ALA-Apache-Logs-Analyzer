@@ -38,10 +38,19 @@ if __name__ == '__main__':
     print('ML prediction starting')
     start = time.time()
     logChecker = Checker(mldf, 'model_01')
-    logChecker.predict()
+    sus_requests = logChecker.predictAndInform()
     end = time.time()
     print('ML prediction finished')
     print(f"Finished. Ml prediction took: {end-start}s")
+
+    email_message = list(sus_requests.values())
+    if not email_message:
+        email_message = "Wiadomość wygenerowana automatycznie.\nNie wykryto podejrzanych zachowań."
+    else:
+        email_message.insert(0, "Wiadomość wygenerowana automatycznie.\n\nWykryto podejrzane zahcowania:")
+        email_message = "\n".join(email_message)
+
+    print(email_message)
 
     #Graph
     graphVisualizer = GraphVisualizer(ALparser.getVisualizationFormattedLogs())
@@ -51,7 +60,7 @@ if __name__ == '__main__':
     emailClient = EmailClient()
     script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
     abs_file_path = os.path.join(script_dir, relative_img_path)
-    emailClient.send_message("[ALA] Wizualizacja logów", "Wiadomość wygenerowana automatycznie.", [relative_img_path])
+    emailClient.send_message("[ALA] Wizualizacja logów", email_message, [relative_img_path])
 
     # rest endpoint is not usable now
     # uvicorn.run(app, host="0.0.0.0", port=8000)

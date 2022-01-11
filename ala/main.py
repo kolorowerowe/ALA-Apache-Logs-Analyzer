@@ -53,6 +53,7 @@ if __name__ == '__main__':
     #Graph
     graphVisualizer = GraphVisualizer(ALparser.getVisualizationFormattedLogs())
     relative_img_path = graphVisualizer.generateBaseGraph()
+    graphVisualizer.applyPredictions(sus_requests)
 
     # Sending email with graph
     emailClient = EmailClient()

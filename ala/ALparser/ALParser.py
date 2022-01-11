@@ -36,6 +36,11 @@ class ApacheLogParser:
             else:
                 self.addLogLineToList(matched, logLine)
 
+    @staticmethod
+    def parseExternalLine(logLine):
+        matched = re.fullmatch('([(\d\.)]+) "?([\w-]+)"? "?([\w-]+)"? "(.*?)" (\d+) ([\d-]+) "(.*?)" "(.*?)"\n?', logLine)
+        return matched[4]
+
     def preprocess(self):
         self.__logs = pd.DataFrame(self.__logs)
         self.sessions = self.normalize()

@@ -3,6 +3,7 @@ from itertools import chain
 import pygraphviz
 from more_itertools import pairwise
 from collections import Counter
+from ALparser.ALParser import ApacheLogParser
 from config import Configuration
 import os
 import time
@@ -102,6 +103,29 @@ class GraphVisualizer:
             print("Create result directory")
             os.makedirs(Configuration.resultDir)
 
+    def applyPredictions(self, sus_requests):
+      attacked = [item for sublist in list(sus_requests.values()) for item in sublist]
+      req = []
+      for item in attacked:
+        normRequest = ApacheLogParser.parseExternalLine(item).lower().split(" ")[1]
+        normRequest = normRequest.split("?")[0]
+        url = normRequest.split(".")
+        if normRequest[len(normRequest) - 1] == '/':
+            normRequest = normRequest[:len(normRequest)-1]
+        if len(normRequest) > 0 and (len(url) == 1 or url[len(url)-1].lower() not in Configuration.extensionsToRemove):
+            req.append(normRequest)
+
+      for item in req:
+        try:
+          node = self.G.get_node(item)
+          node.attr['fillcolor'] = "red"
+        except KeyError:
+            print(item)
+
+      drawPath = os.path.join(Configuration.resultDir, "logs_flow_graph.png")
+      self.G.draw(drawPath, prog='dot')
+      self.G.close()
+
     def generateBaseGraph(self):
         print("Generate base graph")
         start = time.time()
@@ -134,9 +158,9 @@ class GraphVisualizer:
         trace_max = trace_counts[-1]
         color_min = ev_counter.min()
         color_max = ev_counter.max()
-        G = pygraphviz.AGraph(strict= False, directed=True)
-        G.graph_attr['rankdir'] = 'LR'
-        G.node_attr['shape'] = 'Mrecord'
+        self.G = pygraphviz.AGraph(strict= False, directed=True)
+        self.G.graph_attr['rankdir'] = 'LR'
+        self.G.node_attr['shape'] = 'Mrecord'
 
         w_net_corrected = dict()
         ap = APInit(w_net, ev_end_set)
@@ -175,26 +199,26 @@ class GraphVisualizer:
                     if not visited[new_node]:
                         w_net_corrected[new_node][event] += new_value
                     else:
-                        G.add_edge(new_node + f' {ev_counter[new_node]}', event + f' {value}', penwidth=4*new_value/(trace_max-trace_min)+0.1, label=new_value)
+                        self.G.add_edge(new_node, event, penwidth=4*new_value/(trace_max-trace_min)+0.1, label=new_value)
             color = int(float(color_min-value)/float(color_min-color_max)*100.00)
             my_color = "#ff9933"+str(hex(color))[2:]
-            G.add_node(event + f' {value}', style="rounded,filled", fillcolor=my_color)
+            self.G.add_node(event, style="rounded,filled", fillcolor=my_color)
             for pr, cnt in succesors.items(): # preceeding event, count
-                if pr not in ev_end_set:
-                    pr = pr + f' {ev_counter[pr]}'
-                G.add_edge(event + f' {value}', pr, penwidth=4*cnt/(trace_max-trace_min)+0.1, label=cnt)
+                # if pr not in ev_end_set:
+                #     pr = pr + f' {ev_counter[pr]}'
+                self.G.add_edge(event, pr, penwidth=4*cnt/(trace_max-trace_min)+0.1, label=cnt)
 
         for ev_end in ev_end_set:
-            end = G.get_node(ev_end)
+            end = self.G.get_node(ev_end)
             end.attr['shape'] = 'circle'
             end.attr['label'] = ''
 
-        G.add_node("start", shape="circle", label="Start")
+        self.G.add_node("start", shape="circle", label="Start")
         for ev_start in ev_start_set:
-            G.add_edge("start", ev_start + f' {ev_counter[ev_start]}')
+            self.G.add_edge("start", ev_start)
 
         drawPath = os.path.join(Configuration.resultDir, "logs_flow_graph.png")
-        G.draw(drawPath, prog='dot')
+        self.G.draw(drawPath, prog='dot')
         
         end = time.time()
         print(f"Generated graph. Took: {end-start}s")

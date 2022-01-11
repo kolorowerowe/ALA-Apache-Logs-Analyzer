@@ -7,6 +7,94 @@ from config import Configuration
 import os
 import time
 
+def APDiscovery(w_net, ev_end_set, currentNode, visited, ap, parent, low, disc, time=0):
+  if currentNode in ev_end_set:
+    return ap
+
+  #Count of children in current node 
+  children =0
+  # Mark the current node as visited and print it 
+  visited[currentNode]= True
+
+  # Initialize discovery time and low value 
+  disc[currentNode] = time 
+  low[currentNode] = time 
+  time += 1
+
+  for vertex in w_net[currentNode].keys():
+    if vertex in ev_end_set:
+      continue
+
+    # If vertex is not visited yet, make it a child of currentNode and visit it
+    if visited[vertex] == False : 
+      parent[vertex] = currentNode 
+      children += 1
+      ap = APDiscovery(w_net, ev_end_set, vertex, visited, ap, parent, low, disc, time) 
+
+      # Check if the subtree rooted with vertex has a connection to one of the ancestors of currentNode
+      low[currentNode] = min(low[currentNode], low[vertex]) 
+
+      # currentNode is an articulation point in following cases 
+      # (1) currentNode is root of DFS tree and has two or more children. 
+      if parent[currentNode] == -1 and children > 1: 
+        ap[currentNode] = True
+
+      #(2) If currentNode is not root and low value of one of its child is more 
+      # than discovery value of currentNode. 
+      if parent[currentNode] != -1 and low[vertex] >= disc[currentNode]: 
+        ap[currentNode] = True
+        
+    # Update low value of currentNode for parent function calls	 
+    elif vertex != parent[currentNode]: 
+      low[currentNode] = min(low[currentNode], disc[vertex])
+
+  return ap
+
+def APInit(w_net, ev_end_set): 
+  # Mark all the vertices as not visited  
+  visited = dict.fromkeys(w_net.keys(),False)
+  disc = dict.fromkeys(w_net.keys(),float("Inf"))
+  low = dict.fromkeys(w_net.keys(),float("Inf"))
+  parent = dict.fromkeys(w_net.keys(),-1)
+  ap = dict.fromkeys(w_net.keys(),False)
+
+  for node in w_net.keys():
+    if visited[node] == False: 
+      ap = APDiscovery(w_net, ev_end_set, node, visited, ap, parent, low, disc) 
+
+  return ap
+
+def countPredecessors(graph, node):
+  count = 0
+
+  for succesors in graph.values():
+    if node in succesors.keys():
+      count += 1
+
+  return count
+
+def getHighestInputEdge(graph, node):
+  value = 0
+  source = None
+
+  for pr, succesors in graph.items():
+    if node in succesors.keys() and succesors[node] > value:
+      value = succesors[node]
+      source = pr
+
+  return source, value
+
+def getHighestOutputEdge(graph, node):
+  value = 0
+  destination = None
+
+  for succesor, cnt in graph[node].items():
+    if cnt > value:
+      value = cnt
+      destination = succesor
+
+  return destination, value
+
 class GraphVisualizer:
     def __init__(self, formatedLogs):
         self.visFormLogs = formatedLogs
@@ -49,25 +137,61 @@ class GraphVisualizer:
         G = pygraphviz.AGraph(strict= False, directed=True)
         G.graph_attr['rankdir'] = 'LR'
         G.node_attr['shape'] = 'Mrecord'
-        for event, succesors in w_net.items():
-            try:
+
+        w_net_corrected = dict()
+        ap = APInit(w_net, ev_end_set)
+        try:
+            for event, succesors in w_net.items():
                 value = ev_counter[event]
-                color = int(float(color_max-value)/float(color_max-color_min)*100.00)
-                my_color = "#ff9933"+str(hex(color))[2:]
-                G.add_node(event, style="rounded,filled", fillcolor=my_color)
+                if value >= Configuration.event_max or ap[event] or event in ev_start_set:
+                    w_net_corrected[event] = Counter()
                 for pr, cnt in succesors.items(): # preceeding event, count
-                    G.add_edge(event, pr, penwidth=4*cnt/(trace_max-trace_min)+0.1, label=cnt)
-            except KeyError:
-                print(event)
+                    # if event should be drawn at all and cnt is within treshold
+                    if (pr in ev_end_set or ev_counter[pr] >= Configuration.event_max or ap[pr] or pr in ev_start_set) and cnt >= Configuration.flow_max:
+                        w_net_corrected[event][pr] += cnt
+        except KeyError:
+            print(event)
+
+        visited = dict.fromkeys(w_net.keys(),False)
+
+        for event in ev_end_set:
+            if not countPredecessors(w_net_corrected, event):
+                new_node, new_value = getHighestInputEdge(w_net, event)
+                if not w_net_corrected.get(new_node):
+                    w_net_corrected[new_node] = Counter()
+                w_net_corrected[new_node][event] += new_value
+
+        for event, succesors in w_net_corrected.items():
+            visited[event] = True
+            value = ev_counter[event]
+            if len(succesors) or countPredecessors(w_net_corrected, event) or event in ev_start_set:
+            # event should be drawn but has only input edges
+                if not len(succesors):
+                    new_node, new_value = getHighestOutputEdge(w_net, event)
+                    succesors[new_node] += new_value
+                # event should be drawn but has only output edges
+                elif not countPredecessors(w_net_corrected, event) and not event in ev_start_set:
+                    new_node, new_value = getHighestInputEdge(w_net, event)
+                    if not visited[new_node]:
+                        w_net_corrected[new_node][event] += new_value
+                    else:
+                        G.add_edge(new_node + f' {ev_counter[new_node]}', event + f' {value}', penwidth=4*new_value/(trace_max-trace_min)+0.1, label=new_value)
+            color = int(float(color_min-value)/float(color_min-color_max)*100.00)
+            my_color = "#ff9933"+str(hex(color))[2:]
+            G.add_node(event + f' {value}', style="rounded,filled", fillcolor=my_color)
+            for pr, cnt in succesors.items(): # preceeding event, count
+                if pr not in ev_end_set:
+                    pr = pr + f' {ev_counter[pr]}'
+                G.add_edge(event + f' {value}', pr, penwidth=4*cnt/(trace_max-trace_min)+0.1, label=cnt)
 
         for ev_end in ev_end_set:
             end = G.get_node(ev_end)
             end.attr['shape'] = 'circle'
             end.attr['label'] = ''
 
-        G.add_node("start", shape="circle", label="")
+        G.add_node("start", shape="circle", label="Start")
         for ev_start in ev_start_set:
-            G.add_edge("start", ev_start)
+            G.add_edge("start", ev_start + f' {ev_counter[ev_start]}')
 
         drawPath = os.path.join(Configuration.resultDir, "logs_flow_graph.png")
         G.draw(drawPath, prog='dot')

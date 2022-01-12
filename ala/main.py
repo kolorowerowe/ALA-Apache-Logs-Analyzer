@@ -11,7 +11,7 @@ from reader import file_reader
 from report.EmailClient import EmailClient
 from ALparser.ALParser import ApacheLogParser
 from MLs.Checker import Checker
-from visualizer.graph_visualizer import GraphVisualizer
+# from visualizer.graph_visualizer import GraphVisualizer
 
 app = FastAPI()
 
@@ -37,29 +37,30 @@ if __name__ == '__main__':
 
     print('ML prediction starting')
     start = time.time()
-    logChecker = Checker(mldf, 'model_01')
+    logChecker = Checker(mldf, 'CNN_v1_7738')
     sus_requests = logChecker.predictAndInform()
     end = time.time()
     print('ML prediction finished')
     print(f"Finished. Ml prediction took: {end-start}s")
 
     email_message = [item for sublist in list(sus_requests.values()) for item in sublist]
+    print(len(email_message))
     if not email_message:
         email_message = "Wiadomość wygenerowana automatycznie.\nNie wykryto podejrzanych zachowań."
     else:
         email_message.insert(0, "Wiadomość wygenerowana automatycznie.\n\nWykryto podejrzane zahcowania:")
         email_message = "\n".join(email_message)
 
-    #Graph
-    graphVisualizer = GraphVisualizer(ALparser.getVisualizationFormattedLogs())
-    relative_img_path = graphVisualizer.generateBaseGraph()
-    graphVisualizer.applyPredictions(sus_requests)
+    # #Graph
+    # graphVisualizer = GraphVisualizer(ALparser.getVisualizationFormattedLogs())
+    # relative_img_path = graphVisualizer.generateBaseGraph()
+    # graphVisualizer.applyPredictions(sus_requests)
 
-    # Sending email with graph
-    emailClient = EmailClient()
-    script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
-    abs_file_path = os.path.join(script_dir, relative_img_path)
-    emailClient.send_message("[ALA] Wizualizacja logów", email_message, [relative_img_path])
+    # # Sending email with graph
+    # emailClient = EmailClient()
+    # script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
+    # abs_file_path = os.path.join(script_dir, relative_img_path)
+    # emailClient.send_message("[ALA] Wizualizacja logów", email_message, [relative_img_path])
 
     # rest endpoint is not usable now
     # uvicorn.run(app, host="0.0.0.0", port=8000)

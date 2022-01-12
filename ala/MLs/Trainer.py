@@ -44,5 +44,7 @@ class Trainer(MLmodule):
         _, accuracy = model.evaluate(X_test, y_test, verbose=0)
         print('Accuracy: %.2f' % (accuracy*100))
         # if(accuracy*100 > 78.31):
-        if(accuracy*100 > 77.38):
-            model.save(os.path.join(os.path.dirname(__file__), '../../models/model_01'))
+        #if(accuracy*100 > 77.38):
+        model.save(os.path.join(os.path.dirname(__file__), '../../models/model_01'))
+
+        self.saveOrdinalEncoder()

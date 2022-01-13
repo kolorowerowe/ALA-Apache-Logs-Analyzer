@@ -162,16 +162,43 @@ class GraphVisualizer:
         self.G.graph_attr['rankdir'] = 'LR'
         self.G.node_attr['shape'] = 'Mrecord'
 
+        for event, succesors in w_net.items():
+          value = ev_counter[event]
+          try:
+            color = int(float(color_max-value)/float(color_max-color_min)*100.00)
+            my_color = "#ff9933"+str(hex(color))[2:]
+            self.G.add_node(event, style="rounded,filled", fillcolor=my_color)
+            for pr, cnt in succesors.items(): # preceeding event, count
+              self.G.add_edge(event, pr, penwidth=4*cnt/(trace_max-trace_min)+0.1, label=cnt)
+          except KeyError:
+              print(event)
+
+        for ev_end in ev_end_set:
+            end = self.G.get_node(ev_end)
+            end.attr['shape'] = 'circle'
+            end.attr['label'] = ''
+
+        self.G.add_node("start", shape="circle", label="Start")
+        for ev_start in ev_start_set:
+            self.G.add_edge("start", ev_start)
+
+        drawPath = os.path.join(Configuration.resultDir, "logs_flow_graph_unfiltered.png")
+        self.G.draw(drawPath, prog='dot')
+
+        self.G = pygraphviz.AGraph(strict= False, directed=True)
+        self.G.graph_attr['rankdir'] = 'LR'
+        self.G.node_attr['shape'] = 'Mrecord'
+
         w_net_corrected = dict()
         ap = APInit(w_net, ev_end_set)
         try:
             for event, succesors in w_net.items():
                 value = ev_counter[event]
-                if value >= Configuration.event_max or ap[event] or event in ev_start_set:
+                if value <= Configuration.event_max or ap[event] or event in ev_start_set:
                     w_net_corrected[event] = Counter()
                 for pr, cnt in succesors.items(): # preceeding event, count
                     # if event should be drawn at all and cnt is within treshold
-                    if (pr in ev_end_set or ev_counter[pr] >= Configuration.event_max or ap[pr] or pr in ev_start_set) and cnt >= Configuration.flow_max:
+                    if (pr in ev_end_set or ev_counter[pr] <= Configuration.event_max or ap[pr] or pr in ev_start_set) and cnt <= Configuration.flow_max:
                         w_net_corrected[event][pr] += cnt
         except KeyError:
             print(event)

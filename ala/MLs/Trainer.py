@@ -5,6 +5,9 @@ from sklearn.model_selection import train_test_split
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
 from MLs.MLmodule import MLmodule
+from sklearn.ensemble import RandomForestClassifier
+from sklearn import metrics
+import joblib
 
 from reader import file_reader
 from ALparser.ALParser import ApacheLogParser
@@ -27,22 +30,33 @@ class Trainer(MLmodule):
 
     def prepareAndTrain(self):
         encLabels = self.encodeLabels()
-        encCat = self.encodeCategorical()
+        encCat = self.encodeCategorical(important=True)
 
         inputs = np.append(encCat, self.numeric, axis=1)
 
         X_train, X_test, y_train, y_test = train_test_split(inputs, encLabels, test_size=0.3, random_state=53)
 
-        model = Sequential()
-        model.add(Dense(128, input_dim=X_train.shape[1], activation='elu', kernel_initializer='he_normal'))
-        model.add(Dense(64, input_dim=X_train.shape[1], activation='elu'))
+        # model = Sequential()
+        # model.add(Dense(64, input_dim=X_train.shape[1], activation='elu', kernel_initializer='he_normal'))
+        # model.add(Dense(32, input_dim=X_train.shape[1], activation='elu'))
 
-        model.add(Dense(1, activation='sigmoid'))
+        # model.add(Dense(1, activation='sigmoid'))
 
-        model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['binary_accuracy'])
-        model.fit(X_train, y_train, epochs=100, batch_size=16, verbose=2)
-        _, accuracy = model.evaluate(X_test, y_test, verbose=0)
+        # model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['binary_accuracy'])
+        # model.fit(X_train, y_train, epochs=100, batch_size=32, verbose=2)
+        # _, accuracy = model.evaluate(X_test, y_test, verbose=0)
+
+        rfc = RandomForestClassifier()
+
+        #Train the model using the training sets
+        rfc.fit(X_train, y_train)
+
+        #Predict the response for test dataset
+        y_pred = rfc.predict(X_test)
+
+        accuracy = metrics.accuracy_score(y_test, y_pred)
+
         print('Accuracy: %.2f' % (accuracy*100))
-        # if(accuracy*100 > 78.31):
-        if(accuracy*100 > 77.38):
-            model.save(os.path.join(os.path.dirname(__file__), '../../models/model_01'))
+        if(accuracy*100 > 82.17):
+            joblib.dump(rfc, os.path.join(os.path.dirname(__file__), '../../models/RFC'))
+            # model.save(os.path.join(os.path.dirname(__file__), '../../models/model_01'))

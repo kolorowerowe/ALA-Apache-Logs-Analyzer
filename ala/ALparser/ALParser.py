@@ -11,7 +11,7 @@ class ApacheLogParser:
     # TODO: Refine lists
     __suspicious_agents = []
     __suspicious_referers = []
-    __reserved_words = ['union','/etc','/passwd','%27',' or ','%20or%20','+or+',' and ','%20and%20','+and+','localhost',';']
+    __reserved_words = ['union','/etc','/passwd','%27',' or ','%20or%20','+or+',' and ','%20and%20','+and+','localhost',';','admin']
     #__err_statuses = []
 
     __logs = []

@@ -11,7 +11,7 @@ from reader import file_reader
 from report.EmailClient import EmailClient
 from ALparser.ALParser import ApacheLogParser
 from MLs.Checker import Checker
-from visualizer.graph_visualizer import GraphVisualizer
+# from visualizer.graph_visualizer import GraphVisualizer
 
 app = FastAPI()
 
@@ -50,16 +50,18 @@ if __name__ == '__main__':
         email_message.insert(0, "Wiadomość wygenerowana automatycznie.\n\nWykryto podejrzane zahcowania:")
         email_message = "\n".join(email_message)
 
-    #Graph
-    graphVisualizer = GraphVisualizer(ALparser.getVisualizationFormattedLogs())
-    relative_img_path = graphVisualizer.generateBaseGraph()
-    graphVisualizer.applyPredictions(sus_requests)
+    print(email_message)
 
-    # Sending email with graph
-    emailClient = EmailClient()
-    script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
-    abs_file_path = os.path.join(script_dir, relative_img_path)
-    emailClient.send_message("[ALA] Wizualizacja logów", email_message, [relative_img_path])
+    # #Graph
+    # graphVisualizer = GraphVisualizer(ALparser.getVisualizationFormattedLogs())
+    # relative_img_path = graphVisualizer.generateBaseGraph()
+    # graphVisualizer.applyPredictions(sus_requests)
+
+    # # Sending email with graph
+    # emailClient = EmailClient()
+    # script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
+    # abs_file_path = os.path.join(script_dir, relative_img_path)
+    # emailClient.send_message("[ALA] Wizualizacja logów", email_message, [relative_img_path])
 
     # rest endpoint is not usable now
     # uvicorn.run(app, host="0.0.0.0", port=8000)

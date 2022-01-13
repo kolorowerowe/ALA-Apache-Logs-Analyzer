@@ -1,6 +1,7 @@
 from keras.models import load_model
 import os
 import numpy as np
+import joblib
 
 from MLs.MLmodule import MLmodule
 
@@ -8,10 +9,11 @@ class Checker(MLmodule):
     def __init__(self, dataframe, model_name):
         super().__init__(dataframe)
         self.dataToClassify = dataframe
-        self.model = load_model(os.path.join(os.path.dirname(__file__), '../../models/' + model_name))
+        self.model = joblib.load(os.path.join(os.path.dirname(__file__), '../../models/RFC'))
+        # self.model = load_model(os.path.join(os.path.dirname(__file__), '../../models/' + model_name))
 
     def predictAndInform(self):
-        encCat = self.encodeCategorical()
+        encCat = self.encodeCategorical(important=True)
         numCat = encCat.shape[1]
 
         inputs = np.append(encCat, self.numeric, axis=1)
@@ -24,17 +26,18 @@ class Checker(MLmodule):
             if ynew_classes[y] == 'attack':
                 # restore original log entry
                 decoded = self.decodeCategorical(inputs[y,:numCat].reshape(1,-1)).flatten().tolist()
-                request = decoded[1:4]
-                request.append("\"" + " ".join(decoded[4:6] + [decoded[7]]) + "\"")
+                request = self.categorical[['host', 'logname', 'user']].iloc[y].tolist()
+                request.append(f"\"{decoded[0]} {self.categorical['activity'].iloc[y]} {decoded[2]}\"")
                 request.append(str(int(self.numeric['status'].iloc[y])))
                 request.append(str(int(self.numeric['bytes_of_response'].iloc[y])))
-                request.append("\"" + decoded[-2] + "\"")
-                request.append("\"" + decoded[-1] + "\"")
+                request.append("\"" + self.categorical['referer'].iloc[y] + "\"")
+                request.append("\"" + self.categorical['user_agent'].iloc[y] + "\"")
                 request = " ".join(request)
 
-                if not decoded[0] in sus_requests:
-                    sus_requests[decoded[0]] = [request]
+                id = self.categorical['session_id'].iloc[y]
+                if not id in sus_requests:
+                    sus_requests[id] = [request]
                 else:
-                    sus_requests[decoded[0]].append(request)
+                    sus_requests[id].append(request)
         
         return sus_requests

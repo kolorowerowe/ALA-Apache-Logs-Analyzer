@@ -22,7 +22,12 @@ class MLmodule:
     def validate(self, dataframe):
         return list(dataframe.columns) == self.VALID_COLUMNS_LIST
 
-    def encodeCategorical(self):
+    def encodeCategorical(self, important=False):
+        if important:
+            self.oe = OrdinalEncoder()
+            imp_cat = self.categorical[['http_method', 'activity_file_ext', 'http_version']]
+            self.oe.fit(imp_cat)
+            return self.oe.transform(imp_cat)
         return self.oe.transform(self.categorical)
 
     def decodeCategorical(self, data):

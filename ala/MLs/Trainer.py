@@ -18,7 +18,7 @@ class Trainer(MLmodule):
         TrainerParser = ApacheLogParser()
         file_reader.read_logs_file(TrainerParser, log_file_name)
         df = TrainerParser.getMLFormattedLogs()
-        super().__init__(df)
+        super().__init__(df, important=True)
         
         script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
         relative_file_path = '../../data/' + labels_file_name
@@ -30,7 +30,7 @@ class Trainer(MLmodule):
 
     def prepareAndTrain(self):
         encLabels = self.encodeLabels()
-        encCat = self.encodeCategorical(important=True)
+        encCat = self.encodeCategorical()
 
         inputs = np.append(encCat, self.numeric, axis=1)
 
@@ -57,7 +57,7 @@ class Trainer(MLmodule):
         accuracy = metrics.accuracy_score(y_test, y_pred)
 
         print('Accuracy: %.2f' % (accuracy*100))
-        if(accuracy*100 > 82.17):
+        if(accuracy*100 >= 82.17):
             joblib.dump(rfc, os.path.join(os.path.dirname(__file__), '../../models/RFC'))
             # model.save(os.path.join(os.path.dirname(__file__), '../../models/model_01'))
 

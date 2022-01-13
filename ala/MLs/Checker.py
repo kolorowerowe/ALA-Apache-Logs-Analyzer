@@ -7,13 +7,13 @@ from MLs.MLmodule import MLmodule
 
 class Checker(MLmodule):
     def __init__(self, dataframe, model_name):
-        super().__init__(dataframe, True)
+        super().__init__(dataframe, True, True)
         self.dataToClassify = dataframe
-        self.model = joblib.load(os.path.join(os.path.dirname(__file__), '../../models/RFC'))
+        self.model = joblib.load(os.path.join(os.path.dirname(__file__), '../../models/' + model_name))
         # self.model = load_model(os.path.join(os.path.dirname(__file__), '../../models/' + model_name))
 
     def predictAndInform(self):
-        encCat = self.encodeCategorical(important=True)
+        encCat = self.encodeCategorical()
         numCat = encCat.shape[1]
 
         inputs = np.append(encCat, self.numeric, axis=1)

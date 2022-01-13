@@ -9,7 +9,7 @@ class MLmodule:
                             'session_request_count_per_second', 'session_same_count']
     CATEGORICAL_COLUMNS_LIST = ['session_id', 'host', 'logname', 'user', 'http_method', 'activity', 'activity_file_ext', 'http_version', 'referer', 'user_agent']
 
-    def __init__(self, df, load_oe=False) -> None:
+    def __init__(self, df, load_oe=False, important=False) -> None:
         if not self.validate(df):
             raise RuntimeError("Invalid data passed to trainer.")
         self.numeric = df[self.NUMERIC_COLUMNS_LIST]
@@ -17,8 +17,13 @@ class MLmodule:
         self.labels = []
         self.le = LabelEncoder()
         self.le.fit(['normal', 'attack'])
+        self.important = important
         self.oe = OrdinalEncoder()
-        self.oe.fit(self.categorical)
+        self.imp_cat = self.categorical[['http_method', 'activity_file_ext', 'http_version']]
+        if important:
+            self.oe.fit(self.imp_cat)
+        else:
+            self.oe.fit(self.categorical)
         if load_oe:
             oe_cat = np.load('encoder_data.npy', allow_pickle=True)
             for feature_num in range(len(oe_cat)):
@@ -28,12 +33,9 @@ class MLmodule:
     def validate(self, dataframe):
         return list(dataframe.columns) == self.VALID_COLUMNS_LIST
 
-    def encodeCategorical(self, important=False):
-        if important:
-            self.oe = OrdinalEncoder()
-            imp_cat = self.categorical[['http_method', 'activity_file_ext', 'http_version']]
-            self.oe.fit(imp_cat)
-            return self.oe.transform(imp_cat)
+    def encodeCategorical(self):
+        if self.important:
+            return self.oe.transform(self.imp_cat)
         return self.oe.transform(self.categorical)
 
     def decodeCategorical(self, data):

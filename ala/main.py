@@ -37,13 +37,14 @@ if __name__ == '__main__':
 
     print('ML prediction starting')
     start = time.time()
-    logChecker = Checker(mldf, 'model_01')
+    logChecker = Checker(mldf, 'CNN_v1_7738')
     sus_requests = logChecker.predictAndInform()
     end = time.time()
     print('ML prediction finished')
     print(f"Finished. Ml prediction took: {end-start}s")
 
     email_message = [item for sublist in list(sus_requests.values()) for item in sublist]
+    print(len(email_message))
     if not email_message:
         email_message = "Wiadomość wygenerowana automatycznie.\nNie wykryto podejrzanych zachowań."
     else:

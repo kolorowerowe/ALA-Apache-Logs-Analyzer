@@ -7,7 +7,7 @@ from MLs.MLmodule import MLmodule
 
 class Checker(MLmodule):
     def __init__(self, dataframe, model_name):
-        super().__init__(dataframe)
+        super().__init__(dataframe, True)
         self.dataToClassify = dataframe
         self.model = joblib.load(os.path.join(os.path.dirname(__file__), '../../models/RFC'))
         # self.model = load_model(os.path.join(os.path.dirname(__file__), '../../models/' + model_name))

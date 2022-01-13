@@ -60,3 +60,5 @@ class Trainer(MLmodule):
         if(accuracy*100 > 82.17):
             joblib.dump(rfc, os.path.join(os.path.dirname(__file__), '../../models/RFC'))
             # model.save(os.path.join(os.path.dirname(__file__), '../../models/model_01'))
+
+        self.saveOrdinalEncoder()

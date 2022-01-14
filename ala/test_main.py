@@ -116,13 +116,35 @@ class Test(TestCase):
         expected_statuses = np.array([1, 1, 2, 2])
         numpy.testing.assert_array_equal(expected_statuses, ml_df['session_same_count'].to_numpy())
 
+    def test_e2e_parsing_and_creating_visualization_data():
+        # Setup
+        ALparser = ApacheLogParser('../../data/test/bad-user-agents-test.list', '../../data/test/bad-referer-test.list')
+        file_reader.read_logs_file(ALparser, 'test/input1')
+
+        # Get Visualization formatted logs
+        vs_logs = ALparser.getVisualizationFormattedLogs()
+
+        ## ASSERTIONS
+
+        activity0 = {'caseId': '0_session1', 'Activity': 'End', 'index': 0}
+        activity1_1 = {'caseId': '1_session1', 'Activity': '/admin/blog/tags/puppet', 'index': 0}
+        activity1_2 = {'caseId': '1_session1', 'Activity': 'End', 'index': 1}
+        activity2_1 = {'caseId': '2_session1', 'Activity': '/robots.txt', 'index': 0}
+        activity2_2 = {'caseId': '2_session1', 'Activity': '/robots.txt', 'index': 1}
+        activity2_3 = {'caseId': '2_session1', 'Activity': 'End', 'index': 2}
+
+        # Logs
+        expected_logs = np.array([activity0, activity1_1, activity1_2, activity2_1, activity2_2, activity2_3])
+        numpy.testing.assert_array_equal(expected_logs, np.array(vs_logs))
+
     
 
 
 
 if __name__ == '__main__':
     fail_count = 0
-    tests = [Test.test_e2e_parsing_and_creating_ml_df]
+    tests = [Test.test_e2e_parsing_and_creating_ml_df,
+            Test.test_e2e_parsing_and_creating_visualization_data]
     for case in tests:
         try:
             case()

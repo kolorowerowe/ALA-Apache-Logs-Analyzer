@@ -14,10 +14,11 @@ class ApacheLogParser:
     __reserved_words = ['union','/etc','/passwd','%27',' or ','%20or%20','+or+',' and ','%20and%20','+and+','localhost',';','admin']
     #__err_statuses = []
 
-    __logs = []
-    visFormLogs = []
+    
 
     def __init__(self, sus_agents = '../../data/bad-user-agents.list', sus_referers = '../../data/bad-referer.list'):
+        self.__logs = []
+        self.visFormLogs = []
         script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
 
         abs_agents_file_path = os.path.join(script_dir, sus_agents)

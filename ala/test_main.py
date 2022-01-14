@@ -14,10 +14,10 @@ import numpy as np
 
 app = FastAPI()
 
-
 class Test(TestCase):
 
-    def test_e2e_parsing_and_creating_ml_df(self):
+    @staticmethod
+    def test_e2e_parsing_and_creating_ml_df():
         # Setup
         ALparser = ApacheLogParser('../../data/test/bad-user-agents-test.list', '../../data/test/bad-referer-test.list')
         file_reader.read_logs_file(ALparser, 'test/input1')
@@ -51,3 +51,21 @@ class Test(TestCase):
         # Session same count
         expected_statuses = np.array([1, 1, 2, 2])
         numpy.testing.assert_array_equal(expected_statuses, ml_df['session_same_count'].to_numpy())
+
+if __name__ == '__main__':
+    fail_count = 0
+    tests = [Test.test_e2e_parsing_and_creating_ml_df]
+    for case in tests:
+        try:
+            case()
+        except AssertionError as e:
+            print(e)
+            fail_count += 1
+        except Exception as any_e:
+            fail_count += 1
+            raise any_e
+
+    if not fail_count:
+        print(f"=====\nAll {len(tests)} tests successful\n=====")
+    else:
+        print(f"=====\n{len(tests)-fail_count}/{len(tests)} tests successful\n=====")

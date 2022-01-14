@@ -1,5 +1,6 @@
 from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
 import numpy as np
+import os
 
 class MLmodule:
     VALID_COLUMNS_LIST = ['session_id', 'host', 'logname', 'user', 'http_method', 'activity', 'activity_file_ext', 'http_version', 'status', 'bytes_of_response',
@@ -25,7 +26,7 @@ class MLmodule:
         else:
             self.oe.fit(self.categorical)
         if load_oe:
-            oe_cat = np.load('encoder_data.npy', allow_pickle=True)
+            oe_cat = np.load(os.path.join(os.path.dirname(__file__),'encoder_data.npy'), allow_pickle=True)
             for feature_num in range(len(oe_cat)):
                 self.oe.categories_[feature_num] = np.unique(np.append(oe_cat[feature_num], self.oe.categories_[feature_num]))
 
@@ -48,4 +49,4 @@ class MLmodule:
         return self.le.inverse_transform(labels)
 
     def saveOrdinalEncoder(self):
-        np.save('encoder_data', self.oe.categories_)
+        np.save(os.path.join(os.path.dirname(__file__), 'encoder_data'), self.oe.categories_)

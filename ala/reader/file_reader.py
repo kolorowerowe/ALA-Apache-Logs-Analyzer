@@ -10,8 +10,6 @@ from ALparser.ALParser import ApacheLogParser
 
 
 def read_logs_file(parser, log_file_name='apache_logs1'):
-    ALparser = parser
-
     script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
     relative_file_path = '../../data/' + log_file_name
 
@@ -22,11 +20,11 @@ def read_logs_file(parser, log_file_name='apache_logs1'):
     with open(abs_file_path, "r") as f:
         print('Opened logs file!')
         for line in f:
-            ALparser.parseLine(line)
+            parser.parseLine(line)
         print('Finished parsing lines')
 
     print('Preprocessing parsed logs')
-    ALparser.preprocess()
+    parser.preprocess()
 
     end = time.time()
     print(f"Finished. Reading and processing took: {end-start}s")

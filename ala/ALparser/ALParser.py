@@ -3,7 +3,6 @@ import re
 import pandas as pd
 import datetime
 from config import Configuration
-from collections import Counter
 
 class ApacheLogParser:
     __NCSAExtendedCombinedLogFormatRegex = '([(\d\.)]+) "?([\w-]+)"? "?([\w-]+)"? \[(.*?)\] "(.*?)" (\d+) ([\d-]+) "(.*?)" "(.*?)"\n?'

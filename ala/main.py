@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-import uvicorn
 import os
 import sys
 import time
@@ -62,9 +61,6 @@ if __name__ == '__main__':
     script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
     abs_file_path = os.path.join(script_dir, relative_img_path)
     emailClient.send_message("[ALA] Wizualizacja logów", email_message, [relative_img_path])
-
-    # rest endpoint is not usable now
-    # uvicorn.run(app, host="0.0.0.0", port=8000)
 
     print('My job for now is done!')
 

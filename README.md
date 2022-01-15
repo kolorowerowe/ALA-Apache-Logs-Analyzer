@@ -12,4 +12,4 @@ Bespieczeństwo Systemów Informatycznych
 `pip install -r requirements.txt` or `python -m pip install -r requirements.txt`
 3. Set app parameters in config.yml file
 4. Run app:
-`python ala/main.py`
+ALA.exe from ALA-Apache-Logs-Analyzer/ala/ directory

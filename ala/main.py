@@ -21,23 +21,25 @@ async def root():
     return {"message": "Hello World"}
 
 if __name__ == '__main__':
+    Configuration.load()
     Configuration.ALAprint('ALA is starting... ', 0)
 
     # Reading & preprocessing logs
     ALparser = ApacheLogParser()
-    file_reader.read_logs_file(ALparser, 'apache_logs1_1000_v2')
+    file_reader.read_logs_file(ALparser, Configuration.logs)
 
     Configuration.ALAprint('ML Formatter starting', 1)
     start = time.time()
     mldf = ALparser.getMLFormattedLogs()
-    mldf.to_csv("result/ml_logs.csv")
+    if Configuration.verbosityCheck(1):
+        mldf.to_csv(Configuration.resultDir + Configuration.mldf_csv)
     end = time.time()
     Configuration.ALAprint('ML Formatter finished', 1)
     Configuration.ALAprint(f"Finished. Ml formatting took: {end-start}s", 2)
 
     Configuration.ALAprint('ML prediction starting', 1)
     start = time.time()
-    logChecker = Checker(mldf, 'RFC')
+    logChecker = Checker(mldf, Configuration.model)
     sus_requests = logChecker.predictAndInform()
     end = time.time()
     Configuration.ALAprint('ML prediction finished', 1)

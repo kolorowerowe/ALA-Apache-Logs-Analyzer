@@ -1,0 +1,27 @@
+filenames:
+    logs: apache_logs1_1000_v2
+    model: RFC
+    mldf_csv: ml_logs.csv
+    logscounter_csv: logs_counter.csv
+    bad_users: bad-user-agents.list
+    bad_referers: bad-referer.list
+email:
+    address: user
+    password:
+    recipients:
+        -
+other:
+    extensionsToRemove:
+        - css
+        - jpg
+        - jpeg
+        - png
+        - gif
+        - woff
+        - svg
+        - ico
+        - ttf
+        - pdf
+    flow_max: 5
+    event_max: 5
+    verbosity: 1

@@ -7,13 +7,9 @@ from config import Configuration
 class ApacheLogParser:
     __NCSAExtendedCombinedLogFormatRegex = '([(\d\.)]+) "?([\w-]+)"? "?([\w-]+)"? \[(.*?)\] "(.*?)" (\d+) ([\d-]+) "(.*?)" "(.*?)"\n?'
     __DatetimeFormat = "%d/%b/%Y:%H:%M:%S %z"
-    # TODO: Refine lists
     __suspicious_agents = []
     __suspicious_referers = []
     __reserved_words = ['union','/etc','/passwd','%27',' or ','%20or%20','+or+',' and ','%20and%20','+and+','localhost',';','admin']
-    #__err_statuses = []
-
-    
 
     def __init__(self, sus_agents = '../../data/bad-user-agents.list', sus_referers = '../../data/bad-referer.list'):
         self.__logs = []
@@ -93,7 +89,6 @@ class ApacheLogParser:
         return self.__logs[index]
 
     def getMLFormattedLogs(self):
-        # TODO: encode string data
         ''' Return a df with columns:
         - session_id - '[host]:[session number]'
         - host*

@@ -2,23 +2,18 @@ import os
 import smtplib
 from email.message import EmailMessage
 import mimetypes
+from config import Configuration
 
 
 class EmailClient:
 
     def __init__(self):
 
-        self.email_address = os.getenv('EMAIL_ADDRESS', '')
-        if not self.email_address:
-            print("ERROR: email address not provided in environment")
+        self.email_address = Configuration.email_address
 
-        self.email_password = os.getenv('EMAIL_PASSWORD', '')
-        if not self.email_password:
-            print("ERROR: email password not provided in environment")
+        self.email_password = Configuration.email_password
 
-        self.email_recipients = os.getenv('EMAIL_RECIPIENTS', '').split(",")
-        if not self.email_recipients:
-            print("ERROR: email recipients not provided in environment")
+        self.email_recipients = Configuration.email_recipients
 
     def send_message(self, subject, text, attachments=[]):
         """Sending e-mail message.

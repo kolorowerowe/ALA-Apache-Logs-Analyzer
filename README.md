@@ -10,6 +10,8 @@ Bespieczeństwo Systemów Informatycznych
 1. Open project directory
 2. Install requirements (optional):
 `pip install -r requirements.txt` or `python -m pip install -r requirements.txt`
+`pip install libgraphviz-dev`
+`pip install pygraphviz`
 3. Place log file in data folder
 4. Set app parameters in config.yml file:
 

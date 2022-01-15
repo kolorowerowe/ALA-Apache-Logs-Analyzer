@@ -100,7 +100,7 @@ class GraphVisualizer:
     def __init__(self, formatedLogs):
         self.visFormLogs = formatedLogs
         if not os.path.exists(Configuration.resultDir):
-            print("Create result directory")
+            Configuration.ALAprint("Create result directory", 1)
             os.makedirs(Configuration.resultDir)
 
     def applyPredictions(self, sus_requests):
@@ -127,7 +127,7 @@ class GraphVisualizer:
       self.G.close()
 
     def generateBaseGraph(self):
-        print("Generate base graph")
+        Configuration.ALAprint("Generate base graph", 1)
         start = time.time()
         self.visFormLogs = pd.DataFrame(self.visFormLogs)
         ev_counter = self.visFormLogs.groupby(['Activity']).Activity.count()
@@ -248,6 +248,6 @@ class GraphVisualizer:
         self.G.draw(drawPath, prog='dot')
         
         end = time.time()
-        print(f"Generated graph. Took: {end-start}s")
+        Configuration.ALAprint(f"Generated graph. Took: {end-start}s", 2)
 
         return drawPath

@@ -6,7 +6,7 @@ currentdir = os.path.dirname(__file__)
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
-from ALparser.ALParser import ApacheLogParser
+from config import Configuration
 
 
 def read_logs_file(parser, log_file_name='apache_logs1'):
@@ -18,15 +18,15 @@ def read_logs_file(parser, log_file_name='apache_logs1'):
     start = time.time()
 
     with open(abs_file_path, "r") as f:
-        print('Opened logs file!')
+        Configuration.ALAprint('Opened logs file!', 1)
         for line in f:
             parser.parseLine(line)
-        print('Finished parsing lines')
+        Configuration.ALAprint('Finished parsing lines', 1)
 
-    print('Preprocessing parsed logs')
+    Configuration.ALAprint('Preprocessing parsed logs', 1)
     parser.preprocess()
 
     end = time.time()
-    print(f"Finished. Reading and processing took: {end-start}s")
+    Configuration.ALAprint(f"Finished. Reading and processing took: {end-start}s", 2)
 
 

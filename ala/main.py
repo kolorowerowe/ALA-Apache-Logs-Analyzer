@@ -11,6 +11,7 @@ from report.EmailClient import EmailClient
 from ALparser.ALParser import ApacheLogParser
 from MLs.Checker import Checker
 from visualizer.graph_visualizer import GraphVisualizer
+from config import Configuration
 
 app = FastAPI()
 
@@ -20,27 +21,27 @@ async def root():
     return {"message": "Hello World"}
 
 if __name__ == '__main__':
-    print('ALA is starting... ')
+    Configuration.ALAprint('ALA is starting... ', 0)
 
     # Reading & preprocessing logs
     ALparser = ApacheLogParser()
     file_reader.read_logs_file(ALparser, 'apache_logs1_1000_v2')
 
-    print('ML Formatter starting')
+    Configuration.ALAprint('ML Formatter starting', 1)
     start = time.time()
     mldf = ALparser.getMLFormattedLogs()
     mldf.to_csv("result/ml_logs.csv")
     end = time.time()
-    print('ML Formatter finished')
-    print(f"Finished. Ml formatting took: {end-start}s")
+    Configuration.ALAprint('ML Formatter finished', 1)
+    Configuration.ALAprint(f"Finished. Ml formatting took: {end-start}s", 2)
 
-    print('ML prediction starting')
+    Configuration.ALAprint('ML prediction starting', 1)
     start = time.time()
     logChecker = Checker(mldf, 'RFC')
     sus_requests = logChecker.predictAndInform()
     end = time.time()
-    print('ML prediction finished')
-    print(f"Finished. Ml prediction took: {end-start}s")
+    Configuration.ALAprint('ML prediction finished', 1)
+    Configuration.ALAprint(f"Finished. Ml prediction took: {end-start}s", 2)
 
     email_message = [item for sublist in list(sus_requests.values()) for item in sublist]
     if not email_message:
@@ -49,7 +50,7 @@ if __name__ == '__main__':
         email_message.insert(0, "Wiadomość wygenerowana automatycznie.\n\nWykryto podejrzane zahcowania:")
         email_message = "\n".join(email_message)
 
-    print(email_message)
+    Configuration.ALAprint(email_message, 3)
 
     #Graph
     graphVisualizer = GraphVisualizer(ALparser.getVisualizationFormattedLogs())
@@ -62,5 +63,5 @@ if __name__ == '__main__':
     abs_file_path = os.path.join(script_dir, relative_img_path)
     emailClient.send_message("[ALA] Wizualizacja logów", email_message, [relative_img_path])
 
-    print('My job for now is done!')
+    Configuration.ALAprint('My job for now is done!', 0)
 

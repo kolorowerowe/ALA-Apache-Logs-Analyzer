@@ -11,6 +11,7 @@ sys.path.insert(0, currentdir)
 from reader import file_reader
 from ALparser.ALParser import ApacheLogParser
 import numpy as np
+from visualizer.graph_visualizer import GraphVisualizer
 
 app = FastAPI()
 
@@ -125,8 +126,8 @@ class Test(TestCase):
         vs_logs = ALparser.getVisualizationFormattedLogs()
 
         ## ASSERTIONS
-
-        activity0 = {'caseId': '0_session1', 'Activity': 'End', 'index': 0}
+        activity0_1 = {'caseId': '0_session1', 'Activity': '/favicon.ico', 'index': 0}
+        activity0_2 = {'caseId': '0_session1', 'Activity': 'End', 'index': 1}
         activity1_1 = {'caseId': '1_session1', 'Activity': '/admin/blog/tags/puppet', 'index': 0}
         activity1_2 = {'caseId': '1_session1', 'Activity': 'End', 'index': 1}
         activity2_1 = {'caseId': '2_session1', 'Activity': '/robots.txt', 'index': 0}
@@ -134,17 +135,29 @@ class Test(TestCase):
         activity2_3 = {'caseId': '2_session1', 'Activity': 'End', 'index': 2}
 
         # Logs
-        expected_logs = np.array([activity0, activity1_1, activity1_2, activity2_1, activity2_2, activity2_3])
+        expected_logs = np.array([activity0_1, activity0_2, activity1_1, activity1_2, activity2_1, activity2_2, activity2_3])
         numpy.testing.assert_array_equal(expected_logs, np.array(vs_logs))
 
-    
+    def test_e2e_creating_graph():
+        # Setup
+        ALparser = ApacheLogParser('../../data/test/bad-user-agents-test.list', '../../data/test/bad-referer-test.list')
+        file_reader.read_logs_file(ALparser, 'test/input1')
 
+        # Create graph
+        graphVisualizer = GraphVisualizer(ALparser.getVisualizationFormattedLogs())
+        relative_img_path = graphVisualizer.generateBaseGraph()
 
+        ## ASSERTIONS
+        os.path.isfile(relative_img_path)
+
+        # clean
+        os.remove(relative_img_path)
 
 if __name__ == '__main__':
     fail_count = 0
     tests = [Test.test_e2e_parsing_and_creating_ml_df,
-            Test.test_e2e_parsing_and_creating_visualization_data]
+            Test.test_e2e_parsing_and_creating_visualization_data,
+            Test.test_e2e_creating_graph]
     for case in tests:
         try:
             case()

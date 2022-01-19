@@ -49,7 +49,7 @@ if __name__ == '__main__':
     if not email_message:
         email_message = "Wiadomość wygenerowana automatycznie.\nNie wykryto podejrzanych zachowań."
     else:
-        email_message.insert(0, "Wiadomość wygenerowana automatycznie.\n\nWykryto podejrzane zahcowania:")
+        email_message.insert(0, "Wiadomość wygenerowana automatycznie.\n\nWykryto podejrzane zachowania:")
         email_message = "\n".join(email_message)
 
     Configuration.ALAprint(email_message, 3)

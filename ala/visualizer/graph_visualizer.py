@@ -156,6 +156,8 @@ class GraphVisualizer:
         trace_counts = sorted(chain(*[c.values() for c in w_net.values()]))
         trace_min = trace_counts[0]
         trace_max = trace_counts[-1]
+        if trace_max == trace_min:
+            trace_max = trace_min + 1
         color_min = ev_counter.min()
         color_max = ev_counter.max()
         self.G = pygraphviz.AGraph(strict= False, directed=True)
